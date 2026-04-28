@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tonal — The tool that helps you see what your photos are missing.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #111d10;
+      --bg2:      #182416;
+      --bg3:      #1f2e1c;
+      --border:   rgba(255,255,255,0.09);
+      --border2:  rgba(255,255,255,0.15);
+      --text:     #e8e4da;
+      --text-mid: #8a9e84;
+      --text-dim: #4a5e46;
+      --accent:   #c4722a;
+      --accent2:  #e8934a;
+      --accent-bg: rgba(196,114,42,0.12);
+      --green:    #4a7a42;
+      --green2:   #5e9854;
+      --serif:    'Cormorant Garamond', Georgia, serif;
+      --sans:     'DM Sans', system-ui, sans-serif;
+      --mono:     'DM Mono', monospace;
+      --nav-h:    62px;
+    }
+    html { font-size: 17px; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-weight: 300; line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    ::selection { background: var(--accent); color: #fff; }
+    input, button, textarea { font-family: var(--sans); }
+
+    /* Nav */
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 0 2.5rem; height: var(--nav-h); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(17,29,16,0.97); backdrop-filter: blur(16px); z-index: 200; }
+    .logo { font-family: var(--serif); font-size: 1.6rem; font-weight: 400; letter-spacing: 0.08em; color: var(--accent2); cursor: pointer; transition: opacity 0.2s; }
+    .logo:hover { opacity: 0.8; }
+    .nav-tag { font-size: 0.8rem; color: var(--text-mid); font-style: italic; font-family: var(--serif); }
+
+    main { max-width: 940px; margin: 0 auto; padding: 0 2rem 6rem; }
+
+    /* Shared */
+    .eyebrow { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 0.9rem; }
+    .section-label { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); font-weight: 500; margin-bottom: 0.5rem; }
+    .divider-label { font-size: 0.8rem; color: var(--text-mid); text-align: center; margin: 1.6rem 0 1.2rem; display: flex; align-items: center; gap: 1rem; }
+    .divider-label::before, .divider-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── STEP 1: Style Picker ── */
+    #style-view { padding-top: 4rem; }
+    .style-headline { font-family: var(--serif); font-size: clamp(2.2rem, 4.5vw, 3.8rem); font-weight: 300; line-height: 1.08; margin-bottom: 1rem; }
+    .style-headline em { font-style: italic; color: var(--accent2); }
+    .style-sub { font-size: 1rem; color: var(--text-mid); line-height: 1.8; max-width: 520px; margin-bottom: 2rem; }
+
+    /* Vision box — same width as grid below */
+    .vision-box { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 1.4rem 1.6rem; margin-bottom: 0; transition: border-color 0.2s; }
+    .vision-box:focus-within { border-color: var(--green2); }
+    .vision-box-label { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); font-weight: 500; margin-bottom: 0.7rem; }
+    .vision-textarea { width: 100%; background: transparent; border: none; outline: none; font-size: 1rem; color: var(--text); line-height: 1.75; resize: none; min-height: 90px; }
+    .vision-textarea::placeholder { color: var(--text-dim); font-style: italic; }
+
+    /* Style grid — 3×3 */
+    .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .style-card { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.2s; background: var(--bg2); }
+    .style-card:hover { border-color: var(--green2); transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+    .style-card.selected { border: 2px solid var(--accent); background: var(--accent-bg); }
+    .style-swatch { height: 64px; }
+    .style-card-body { padding: 10px 12px 12px; }
+    .style-card-name { font-family: var(--serif); font-size: 1.02rem; font-weight: 400; color: var(--text); margin-bottom: 2px; line-height: 1.2; }
+    .style-card-desc { font-size: 0.74rem; color: var(--text-mid); line-height: 1.5; }
+
+    /* Style detail panel */
+    .style-detail { display: none; border: 1px solid var(--border2); border-radius: 8px; padding: 1.5rem 1.8rem; margin-top: 12px; background: var(--bg2); position: relative; }
+    .style-detail.visible { display: block; }
+    .style-detail-close { position: absolute; top: 12px; right: 14px; background: none; border: none; cursor: pointer; color: var(--text-mid); font-size: 20px; line-height: 1; padding: 0; }
+    .style-detail-close:hover { color: var(--text); }
+    .style-detail-name { font-family: var(--serif); font-size: 1.4rem; font-weight: 400; margin-bottom: 0.4rem; color: var(--text); }
+    .style-detail-desc { font-size: 0.9rem; color: var(--text-mid); line-height: 1.8; margin-bottom: 1rem; }
+    .style-detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.2rem; }
+    .style-detail-tag { font-size: 0.68rem; padding: 3px 9px; border: 1px solid var(--border); border-radius: 20px; color: var(--text-mid); }
+    .style-detail-benchmarks { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .benchmark-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .benchmark-item:last-child { border-bottom: none; }
+    .benchmark-key { color: var(--text-mid); }
+    .benchmark-val { font-family: var(--mono); color: var(--accent); font-size: 0.72rem; }
+
+    .continue-btn { width: 100%; background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 6px; font-size: 0.95rem; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.2s; margin-top: 14px; }
+    .continue-btn:hover { opacity: 0.85; }
+    .continue-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    /* ── STEP 2: Upload ── */
+    #upload-view { display: none; padding-top: 4rem; }
+    .back-btn { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-mid); background: none; border: none; cursor: pointer; margin-bottom: 2rem; padding: 0; }
+    .back-btn:hover { color: var(--text); }
+    .selected-style-tag { display: inline-flex; align-items: center; gap: 8px; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent2); background: var(--accent-bg); border: 1px solid rgba(196,114,42,0.3); padding: 5px 14px; border-radius: 20px; margin-bottom: 1.6rem; }
+    .upload-headline { font-family: var(--serif); font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 300; line-height: 1.1; margin-bottom: 2.2rem; }
+    .upload-headline em { font-style: italic; color: var(--accent2); }
+    .drop-zone { border: 1.5px dashed var(--border2); border-radius: 8px; padding: 4.5rem 2rem; text-align: center; cursor: pointer; background: var(--bg2); transition: all 0.2s; }
+    .drop-zone:hover, .drop-zone.drag { border-color: var(--accent); background: var(--accent-bg); }
+    .drop-icon { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--border2); background: var(--bg3); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+    .drop-title { font-family: var(--serif); font-size: 1.3rem; font-weight: 400; margin-bottom: 5px; }
+    .drop-sub { font-size: 0.85rem; color: var(--text-mid); }
+    #file-input { display: none; }
+
+    /* ── STEP 3: Analyzing ── */
+    #analyzing-view { display: none; padding-top: 5rem; text-align: center; }
+    .analyzing-title { font-family: var(--serif); font-size: 2.2rem; font-weight: 300; margin-bottom: 0.5rem; }
+    .analyzing-sub { font-size: 0.9rem; color: var(--text-mid); margin-top: 4px; }
+    .film-strip { display: flex; gap: 4px; justify-content: center; margin: 2.5rem auto; }
+    .ff { width: 13px; height: 20px; background: var(--bg3); border-radius: 2px; animation: fp 1.2s ease-in-out infinite; }
+    .ff:nth-child(1){animation-delay:0s}.ff:nth-child(2){animation-delay:.15s}.ff:nth-child(3){animation-delay:.3s}.ff:nth-child(4){animation-delay:.45s}.ff:nth-child(5){animation-delay:.6s}
+    @keyframes fp{0%,100%{background:var(--bg3)}50%{background:var(--accent)}}
+
+    /* ── STEP 4: Results ── */
+    #results-view { display: none; padding-top: 2.5rem; }
+    .results-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.8rem; gap: 1rem; flex-wrap: wrap; }
+    .results-filename { font-size: 0.72rem; color: var(--text-dim); font-family: var(--mono); margin-bottom: 4px; }
+    .results-title { font-family: var(--serif); font-size: 1.8rem; font-weight: 300; }
+    .new-btn { background: none; border: 1px solid var(--border); color: var(--text-mid); padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .new-btn:hover { border-color: var(--border2); color: var(--text); }
+
+    /* Two-column results — photo sticky, analysis scrolls */
+    .results-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+    .photo-panel { position: sticky; top: calc(var(--nav-h) + 16px); }
+    .analysis-panel { min-height: 0; }
+
+    /* Photo with annotations */
+    .photo-wrap { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .photo-wrap img { width: 100%; display: block; max-height: 380px; object-fit: cover; }
+    .photo-overlay { position: absolute; inset: 0; pointer-events: none; }
+
+    /* Annotation markers */
+    .annotation { position: absolute; pointer-events: all; z-index: 5; }
+    .annotation-icon {
+      width: 26px; height: 26px; border-radius: 4px;
+      background: rgba(17,29,16,0.82);
+      border: 1px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s; cursor: pointer;
+      backdrop-filter: blur(4px);
+      position: relative; z-index: 5;
+    }
+    .annotation:hover .annotation-icon { background: var(--accent); transform: scale(1.12); z-index: 25; }
+    .annotation-tooltip {
+      position: absolute; left: 32px; top: 50%; transform: translateY(-50%);
+      background: rgba(17,29,16,0.97); border: 1px solid var(--border2);
+      border-radius: 7px; padding: 9px 13px; width: 185px;
+      font-size: 0.75rem; color: var(--text); line-height: 1.55;
+      pointer-events: none; opacity: 0; transition: opacity 0.18s;
+      z-index: 30; white-space: normal; backdrop-filter: blur(8px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .annotation-tooltip strong { color: var(--accent2); display: block; margin-bottom: 3px; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .annotation:hover .annotation-tooltip { opacity: 1; }
+    .annotation.flip .annotation-tooltip { left: auto; right: 32px; }
+
+    /* Score strip */
+    .score-strip { margin-top: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.4rem; }
+    .score-strip-top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 8px; }
+    .score-strip-style { font-size: 0.68rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 3px; }
+    .score-strip-label { font-family: var(--serif); font-size: 0.95rem; color: var(--text-mid); font-weight: 300; }
+    .score-strip-num { font-family: var(--serif); font-size: 3.8rem; font-weight: 300; color: var(--accent2); line-height: 1; }
+    .score-strip-denom { font-size: 0.75rem; color: var(--text-dim); text-align: right; }
+    .score-bar { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+    .score-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 1.2s ease; }
+    .score-away { font-size: 0.82rem; color: var(--text-mid); }
+    .score-away strong { color: var(--text); font-weight: 500; }
+    .encouragement { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-family: var(--serif); font-style: italic; font-size: 0.95rem; color: var(--text-mid); line-height: 1.6; }
+
+    /* Style suggestion card */
+    .style-suggestion { background: var(--bg3); border: 1px solid var(--accent); border-radius: 8px; padding: 1.1rem 1.3rem; margin-top: 10px; }
+    .style-suggestion-label { font-size: 0.68rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-bottom: 5px; }
+    .style-suggestion-text { font-size: 0.88rem; color: var(--text); line-height: 1.65; margin-bottom: 10px; }
+    .style-suggestion-btn { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 5px; font-size: 0.82rem; cursor: pointer; transition: opacity 0.2s; }
+    .style-suggestion-btn:hover { opacity: 0.85; }
+
+    /* Analysis blocks */
+    .analysis-panel { display: flex; flex-direction: column; gap: 12px; }
+    .analysis-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .analysis-block-header { padding: 0.85rem 1.4rem; border-bottom: 1px solid var(--border); background: var(--bg3); }
+    .analysis-block-body { padding: 1.1rem 1.4rem; }
+    .analysis-text { font-size: 0.95rem; color: var(--text); line-height: 1.85; }
+
+    .missing-list { display: flex; flex-direction: column; gap: 9px; }
+    .missing-item { display: flex; gap: 10px; align-items: flex-start; }
+    .missing-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 9px; flex-shrink: 0; }
+    .missing-text { font-size: 0.92rem; color: var(--text); line-height: 1.75; }
+
+    /* Corrections table */
+    .corr-table { width: 100%; border-collapse: collapse; }
+    .corr-tr { border-bottom: 1px solid var(--border); }
+    .corr-tr:last-child { border-bottom: none; }
+    .corr-name { font-size: 0.84rem; font-weight: 500; color: var(--text); padding: 9px 0; width: 115px; vertical-align: top; }
+    .corr-val { font-size: 0.8rem; font-family: var(--mono); color: var(--accent2); padding: 9px 10px 9px 0; width: 90px; vertical-align: top; }
+    .corr-reason { font-size: 0.76rem; color: var(--text-mid); line-height: 1.55; padding: 9px 0; vertical-align: top; }
+
+    /* Preset */
+    .preset-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1.3rem; }
+    .preset-desc { font-size: 0.88rem; color: var(--text-mid); line-height: 1.8; margin-bottom: 1.1rem; }
+    .preset-desc strong { color: var(--text); font-weight: 500; }
+    .download-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: var(--accent); color: #fff; border: none; padding: 13px; border-radius: 6px; font-size: 0.88rem; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.2s; }
+    .download-btn:hover { opacity: 0.85; }
+    .downloaded-note { display: none; margin-top: 10px; padding: 11px 13px; background: var(--bg3); border-radius: 6px; font-size: 0.8rem; color: var(--text-mid); line-height: 1.7; border: 1px solid var(--border); }
+    .downloaded-note strong { color: var(--text); font-weight: 500; }
+
+    /* Override */
+    .override-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1.3rem; }
+    .override-desc { font-size: 0.86rem; color: var(--text-mid); line-height: 1.7; margin-bottom: 10px; }
+    .override-row { display: flex; gap: 8px; }
+    .override-input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-size: 0.88rem; color: var(--text); background: var(--bg3); outline: none; transition: border-color 0.2s; }
+    .override-input:focus { border-color: var(--accent); }
+    .override-input::placeholder { color: var(--text-dim); }
+    .override-btn { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); padding: 9px 14px; border-radius: 6px; font-size: 0.84rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .override-btn:hover { border-color: var(--accent); color: var(--accent2); }
+    .override-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Error */
+    #error-view { display: none; padding-top: 5rem; text-align: center; }
+    .error-title { font-family: var(--serif); font-size: 1.8rem; font-weight: 300; margin-bottom: 1rem; }
+    .error-msg { font-size: 0.9rem; color: var(--text-mid); max-width: 480px; margin: 0 auto 2rem; line-height: 1.75; background: var(--bg2); padding: 1.2rem 1.4rem; border-radius: 6px; text-align: left; border: 1px solid var(--border); }
+    .error-retry { background: var(--accent); color: #fff; border: none; padding: 12px 2rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+
+    @media (max-width: 700px) {
+      .results-layout { grid-template-columns: 1fr; }
+      .photo-panel { position: static; }
+      nav { padding: 0 1.2rem; }
+      .nav-tag { display: none; }
+      main { padding: 0 1rem 4rem; }
+      .style-grid { grid-template-columns: 1fr 1fr; }
+      .corr-reason { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="goHome()">Tonal</div>
+  <p class="nav-tag">See what your photos are missing.</p>
+</nav>
+
+<main>
+
+  <!-- Step 1: Style Picker -->
+  <div id="style-view">
+    <p class="eyebrow" style="margin-top:3.5rem;">Step 1 of 2</p>
+    <h1 class="style-headline">What style are you<br /><em>going for?</em></h1>
+    <p class="style-sub">Describe your vision in your own words, or choose from the styles below. Tonal will score your photo specifically against your intent.</p>
+
+    <!-- Vision text box — full width, same as grid -->
+    <div class="vision-box" style="margin-bottom:0;">
+      <p class="vision-box-label">Describe the vision for your photo</p>
+      <textarea class="vision-textarea" id="vision-input" placeholder="e.g. I want it to feel like a summer road trip in the 70s — warm, slightly overexposed, grainy, with that faded Kodachrome look..." oninput="onVisionInput()"></textarea>
+    </div>
+
+    <div class="divider-label">or choose from the styles below</div>
+
+    <!-- 3×3 style grid -->
+    <div class="style-grid" id="style-grid">
+      <div class="style-card" onclick="selectStyle(this,'Rich 35mm film','rich35mm')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#c4956a,#5c3520);"></div>
+        <div class="style-card-body"><p class="style-card-name">Rich 35mm film</p><p class="style-card-desc">Warm lifted shadows, organic grain, analogue character.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'Clean natural light','clean')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#d8d5ce,#a8a49d);"></div>
+        <div class="style-card-body"><p class="style-card-name">Clean natural light</p><p class="style-card-desc">High key, neutral palette, open honest light.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'Moody overcast','moody')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#2a2e35,#0d0f12);"></div>
+        <div class="style-card-body"><p class="style-card-name">Moody overcast</p><p class="style-card-desc">Deep shadows, cool desaturated, atmospheric.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'Vivid street colour','vivid')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#e85d20,#2a8a4a);"></div>
+        <div class="style-card-body"><p class="style-card-name">Vivid street colour</p><p class="style-card-desc">High saturation, bold primaries, colour is the subject.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'Golden hour','golden')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#f5c842,#c4622a);"></div>
+        <div class="style-card-body"><p class="style-card-name">Golden hour</p><p class="style-card-desc">Amber-orange palette, glowing highlights, long shadows.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'Classic black and white','bw')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#d8d8d8,#111);"></div>
+        <div class="style-card-body"><p class="style-card-name">Classic black & white</p><p class="style-card-desc">Full tonal range, rich grain, light and shadow only.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'Muted editorial','editorial')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#c0b8b0,#726860);"></div>
+        <div class="style-card-body"><p class="style-card-name">Muted editorial</p><p class="style-card-desc">Pulled-back saturation, cool and deliberate.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'High contrast street','highcontrast')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#e8e4e0,#050505);"></div>
+        <div class="style-card-body"><p class="style-card-name">High contrast street</p><p class="style-card-desc">Deep blacks, bright highlights, graphic and bold.</p></div>
+      </div>
+      <div class="style-card" onclick="selectStyle(this,'Dreamy soft focus','dreamy')">
+        <div class="style-swatch" style="background:linear-gradient(135deg,#e8c8c8,#b89898,#8a7878);"></div>
+        <div class="style-card-body"><p class="style-card-name">Dreamy soft focus</p><p class="style-card-desc">Pastel haze, lifted shadows, ethereal and romantic.</p></div>
+      </div>
+    </div>
+
+    <!-- Style detail panel -->
+    <div class="style-detail" id="style-detail">
+      <button class="style-detail-close" onclick="closeDetail()">×</button>
+      <p class="section-label" id="detail-eyebrow"></p>
+      <p class="style-detail-name" id="detail-name"></p>
+      <p class="style-detail-desc" id="detail-desc"></p>
+      <div class="style-detail-tags" id="detail-tags"></div>
+      <p class="section-label" style="margin-bottom:8px;">What 100/100 looks like</p>
+      <div class="style-detail-benchmarks" id="detail-benchmarks"></div>
+    </div>
+
+    <button class="continue-btn" id="continue-btn" onclick="goToUpload()" disabled>
+      This is what I'm going for — continue →
+    </button>
+  </div>
+
+  <!-- Step 2: Upload -->
+  <div id="upload-view">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Change style
+    </button>
+    <div class="selected-style-tag">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span id="selected-style-label"></span>
+    </div>
+    <h2 class="upload-headline">Now upload<br />your <em>photo.</em></h2>
+    <input type="file" id="file-input" accept="image/*" />
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="drop-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-mid)" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <p class="drop-title">Drop your photo here</p>
+      <p class="drop-sub">or click to browse — JPG, PNG, WEBP</p>
+    </div>
+  </div>
+
+  <!-- Step 3: Analyzing -->
+  <div id="analyzing-view">
+    <p class="eyebrow" style="text-align:center;padding-top:5rem;">Reading your photo</p>
+    <p class="analyzing-title" style="text-align:center;">Finding what's missing...</p>
+    <p class="analyzing-sub" id="analyzing-file" style="text-align:center;"></p>
+    <div class="film-strip">
+      <div class="ff"></div><div class="ff"></div><div class="ff"></div><div class="ff"></div><div class="ff"></div>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-mid);text-align:center;">Studying colour, contrast, light, composition, and style</p>
+  </div>
+
+  <!-- Step 4: Results -->
+  <div id="results-view">
+    <div class="results-top">
+      <div>
+        <p class="results-filename" id="results-filename"></p>
+        <p class="results-title">Your analysis</p>
+      </div>
+      <button class="new-btn" onclick="goHome()">Analyse another photo</button>
+    </div>
+
+    <div class="results-layout">
+
+      <!-- Left col: photo + score (sticky) -->
+      <div class="photo-panel">
+        <div class="photo-wrap">
+          <img id="result-photo" alt="Your photo" />
+          <div class="photo-overlay" id="photo-overlay"></div>
+        </div>
+        <div class="score-strip">
+          <div class="score-strip-top">
+            <div>
+              <p class="score-strip-style" id="score-style"></p>
+              <p class="score-strip-label" id="score-label"></p>
+            </div>
+            <div>
+              <p class="score-strip-num" id="score-num"></p>
+              <p class="score-strip-denom">out of 100</p>
+            </div>
+          </div>
+          <div class="score-bar"><div class="score-bar-fill" id="score-bar-fill" style="width:0%"></div></div>
+          <p class="score-away" id="score-away"></p>
+          <p class="encouragement" id="encouragement"></p>
+        </div>
+        <!-- Style suggestion (shown when score < 55) -->
+        <div class="style-suggestion" id="style-suggestion" style="display:none;">
+          <p class="style-suggestion-label">Tonal noticed something</p>
+          <p class="style-suggestion-text" id="style-suggestion-text"></p>
+          <button class="style-suggestion-btn" id="style-suggestion-btn" onclick="analyzeAsSuggested()">Analyse as this style instead</button>
+        </div>
+      </div>
+
+      <!-- Right col: analysis (scrolls freely) -->
+      <div class="analysis-panel">
+
+        <div class="analysis-block">
+          <div class="analysis-block-header"><p class="section-label" style="margin-bottom:0;">Why it reads this way</p></div>
+          <div class="analysis-block-body"><p class="analysis-text" id="why-text"></p></div>
+        </div>
+
+        <div class="analysis-block">
+          <div class="analysis-block-header"><p class="section-label" style="margin-bottom:0;">What's holding it back</p></div>
+          <div class="analysis-block-body"><div class="missing-list" id="missing-list"></div></div>
+        </div>
+
+        <div class="analysis-block">
+          <div class="analysis-block-header"><p class="section-label" style="margin-bottom:0;">Composition</p></div>
+          <div class="analysis-block-body"><p class="analysis-text" id="composition-text"></p></div>
+        </div>
+
+        <div class="analysis-block">
+          <div class="analysis-block-header"><p class="section-label" style="margin-bottom:0;">Masking opportunities</p></div>
+          <div class="analysis-block-body"><p class="analysis-text" id="masking-text"></p></div>
+        </div>
+
+        <div class="analysis-block">
+          <div class="analysis-block-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <p class="section-label" style="margin-bottom:0;">Corrections to close the gap</p>
+            <p style="font-size:0.68rem;color:var(--text-dim);font-family:var(--mono);">Lightroom / Capture One</p>
+          </div>
+          <div style="padding:0.4rem 1.4rem 1rem;">
+            <table class="corr-table" id="corr-table"></table>
+          </div>
+        </div>
+
+        <div class="preset-block">
+          <p class="section-label">Reference preset</p>
+          <p class="preset-desc">This <strong>.xmp file</strong> shows what your photo looks like at 100. Open it next to your own edit, study the difference, then get there yourself. <strong>The goal is to not need it.</strong></p>
+          <button class="download-btn" id="download-btn" onclick="downloadPreset()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download reference preset (.xmp)
+          </button>
+          <div class="downloaded-note" id="downloaded-note">
+            <strong>To import in Lightroom:</strong> Develop module → Presets panel → click + → Import Presets → select the file. Apply, study what changed, then replicate it yourself.
+          </div>
+        </div>
+
+        <div class="override-block">
+          <p class="section-label">Not quite right?</p>
+          <p class="override-desc">If Tonal misread your intended style, type it below and reanalyse.</p>
+          <div class="override-row">
+            <input type="text" class="override-input" id="override-input" placeholder="e.g. dreamy film portrait, harsh documentary..." />
+            <button class="override-btn" id="override-btn" onclick="reanalyze()">Reanalyse</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-view">
+    <p class="error-title" style="padding-top:5rem;">Something went wrong</p>
+    <p class="error-msg" id="error-msg"></p>
+    <button class="error-retry" onclick="goHome()">Start again</button>
+  </div>
+
+</main>
+
+<script>
+const styleData = {
+  rich35mm:    { eyebrow:'Warm · Grainy · Organic',    desc:'Warm lifted shadows that never crush to pure black, organic luminance grain consistent across the frame, slightly faded highlights with a gentle roll-off, and colour that reads as analogue — warm reds, muted blues, greens leaning toward yellow.', tags:['Warm','Lifted blacks','Grain','Faded highlights','Analogue'], benchmarks:[['Shadow lift','blacks +12 to +18'],['Grain','uniform, size 28–35'],['Highlight roll-off','gentle S-curve'],['Colour warmth','+200 to +350K'],['Saturation','moderate, not punchy']] },
+  clean:       { eyebrow:'Bright · Minimal · Airy',    desc:'Even diffused light with no harsh shadows, near-neutral white balance with very subtle warmth, open shadows that retain full detail, and a palette that feels honest and unprocessed.', tags:['Bright','Neutral','Open shadows','Diffused','Minimal'], benchmarks:[['Exposure','even, no clipping'],['White balance','neutral ±150K'],['Shadows','fully open'],['Saturation','natural, not boosted'],['Contrast','gentle, no S-curve']] },
+  moody:       { eyebrow:'Dark · Atmospheric · Cool',  desc:'Deep intentional shadows that hold texture without fully crushing, a cool desaturated palette where blues and greys dominate, and a sense that the light is working against the subject.', tags:['Dark','Cool','Desaturated','Atmospheric','Heavy'], benchmarks:[['Shadow depth','deep but not crushed'],['Colour temp','cool −300 to −500K'],['Saturation','pulled −20 to −35'],['Contrast','strong S-curve'],['Highlights','subdued, no glow']] },
+  vivid:       { eyebrow:'Saturated · Bold · Energetic',desc:'Fully committed saturated primaries, warm daylight that makes colour glow rather than burn. The subject exists to carry the colour, not the other way around.', tags:['Saturated','Warm','Bold','High contrast','Punchy'], benchmarks:[['Saturation','vibrance +15, sat +10'],['Colour temp','warm +200 to +400K'],['Contrast','moderate, punchy'],['Highlights','controlled, not blown'],['Shadow warmth','slight warm tint']] },
+  golden:      { eyebrow:'Golden · Hazy · Nostalgic',  desc:'The entire palette sits in the amber-orange-red family, highlights glow without clipping, long directional shadows create depth, and a slight haze softens the furthest elements.', tags:['Warm','Amber','Glowing','Hazy','Nostalgic'], benchmarks:[['Highlight warmth','orange hue +15'],['Shadow warmth','amber tint'],['Haze','slight whites lift'],['Contrast','directional, not flat'],['Saturation','warm tones only']] },
+  bw:          { eyebrow:'Contrast · Texture · Timeless',desc:'The full tonal range is present — true blacks, clean whites, and a rich spread of midtones. Grain adds texture rather than noise.', tags:['Monochrome','Full range','Grain','Contrast','Timeless'], benchmarks:[['Tonal range','full, 0–255'],['Grain','luminance, not colour'],['Midtones','full separation'],['Black point','true black present'],['Highlights','no clipping']] },
+  editorial:   { eyebrow:'Muted · Refined · Cool',     desc:'Saturation pulled back but not to black and white. The palette leans cool and slightly faded. Highlights are never blown. Everything feels deliberate and considered.', tags:['Muted','Cool','Faded','Deliberate','Editorial'], benchmarks:[['Saturation','−25 to −40 overall'],['Colour temp','cool −150 to −300K'],['Highlights','fully recovered'],['Shadow detail','open, lifted'],['Contrast','subtle, no crush']] },
+  highcontrast:{ eyebrow:'Punchy · Graphic · Stark',   desc:'The blacks are genuinely black and the whites genuinely white, with minimal information in between. Shadows are a design element — they shape the composition.', tags:['High contrast','Deep blacks','Graphic','Bold','Stark'], benchmarks:[['Black point','fully crushed'],['White point','at or near clipping'],['Midtones','compressed'],['Contrast curve','aggressive S'],['Saturation','moderate or none']] },
+  dreamy:      { eyebrow:'Soft · Romantic · Ethereal', desc:'Gently lifted blacks and highlights that merge into each other, a pastel palette that leans warm or pink, shallow depth of field, and a haze that feels like memory rather than fog.', tags:['Pastel','Soft','Lifted blacks','Haze','Romantic'], benchmarks:[['Blacks','lift +20 to +30'],['Highlights','lift slightly'],['Saturation','soft, desaturated'],['Haze','clarity −10 to −20'],['Colour temp','warm +100 to +250K']] },
+};
+
+const annotationMap = [
+  { keywords:['highlight','white','blown','bright'], pos:[{x:70,y:10},{x:50,y:8}], path:'<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>' },
+  { keywords:['shadow','black','dark','crush'],      pos:[{x:18,y:78},{x:32,y:82}], path:'<path d="M12 2a10 10 0 0 1 0 20V2z"/><circle cx="12" cy="12" r="10" fill="none"/>' },
+  { keywords:['grain','noise','texture'],            pos:[{x:55,y:50},{x:68,y:58}], path:'<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>' },
+  { keywords:['temp','white balance','warm','cool'], pos:[{x:25,y:30},{x:38,y:25}], path:'<polygon points="12 2 19 6.5 19 17.5 12 22 5 17.5 5 6.5"/>' },
+  { keywords:['saturation','colour','color','hue'],  pos:[{x:75,y:55},{x:60,y:42}], path:'<rect x="7" y="7" width="10" height="10" transform="rotate(45 12 12)"/>' },
+  { keywords:['contrast','curve'],                   pos:[{x:45,y:22},{x:28,y:65}], path:'<path d="M12 2a10 10 0 0 0 0 20V2z"/><circle cx="12" cy="12" r="10" fill="none"/>' },
+  { keywords:['clarity','sharp','detail','focus'],   pos:[{x:48,y:48},{x:58,y:32}], path:'<line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="5.6" y2="18.4"/>' },
+  { keywords:['exposure'],                           pos:[{x:50,y:18},{x:62,y:72}], path:'<circle cx="12" cy="12" r="9"/>' },
+  { keywords:['green','red','orange','blue','skin'],  pos:[{x:30,y:45},{x:72,y:35}], path:'<polygon points="12 3 21 12 12 21 3 12"/>' },
+  { keywords:['vignette','edge','corner'],           pos:[{x:88,y:18},{x:12,y:80}], path:'<rect x="3" y="3" width="18" height="18" rx="2"/>' },
+  { keywords:['crop','composition'],                 pos:[{x:88,y:50},{x:12,y:50}], path:'<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>' },
+];
+
+function buildAnnotations(corrections) {
+  const overlay = document.getElementById('photo-overlay');
+  overlay.innerHTML = '';
+  const usedSlots = new Set();
+
+  corrections.forEach((c, i) => {
+    const text = (c.name + ' ' + c.reason).toLowerCase();
+    let matched = null;
+    for (const m of annotationMap) {
+      if (m.keywords.some(k => text.includes(k))) { matched = m; break; }
+    }
+    if (!matched) matched = annotationMap[i % annotationMap.length];
+
+    let px = matched.pos[i % matched.pos.length].x;
+    let py = matched.pos[i % matched.pos.length].y;
+    const slot = `${Math.round(px/12)}_${Math.round(py/12)}`;
+    if (usedSlots.has(slot)) { px = Math.min(88, px + 14); py = Math.min(85, py + 8); }
+    usedSlots.add(slot);
+
+    const flipTooltip = px > 58;
+    const el = document.createElement('div');
+    el.className = 'annotation' + (flipTooltip ? ' flip' : '');
+    el.style.cssText = `left:${px}%;top:${py}%;`;
+    el.innerHTML = `
+      <div class="annotation-icon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${matched.path}</svg>
+      </div>
+      <div class="annotation-tooltip">
+        <strong>${c.name}</strong>${c.value} — ${c.reason}
+      </div>`;
+    overlay.appendChild(el);
+  });
+}
+
+// ── State ──
+let selectedStyle = null;
+let visionText = null;
+let currentDataUrl = null;
+let currentFileName = null;
+let currentResult = null;
+let suggestedStyle = null;
+
+function onVisionInput() {
+  const val = document.getElementById('vision-input').value.trim();
+  visionText = val || null;
+  if (val) {
+    document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+    selectedStyle = null;
+    closeDetail();
+  }
+  updateContinueBtn();
+}
+
+function selectStyle(card, name, key) {
+  document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedStyle = name;
+  visionText = null;
+  document.getElementById('vision-input').value = '';
+  updateContinueBtn();
+  if (key && styleData[key]) showDetail(key, name);
+  else closeDetail();
+}
+
+function showDetail(key, name) {
+  const d = styleData[key];
+  if (!d) return;
+  document.getElementById('detail-eyebrow').textContent = d.eyebrow;
+  document.getElementById('detail-name').textContent = name;
+  document.getElementById('detail-desc').textContent = d.desc;
+  document.getElementById('detail-tags').innerHTML = d.tags.map(t => `<span class="style-detail-tag">${t}</span>`).join('');
+  document.getElementById('detail-benchmarks').innerHTML = d.benchmarks.map(([k,v]) => `<div class="benchmark-item"><span class="benchmark-key">${k}</span><span class="benchmark-val">${v}</span></div>`).join('');
+  document.getElementById('style-detail').classList.add('visible');
+}
+
+function closeDetail() {
+  document.getElementById('style-detail').classList.remove('visible');
+}
+
+function updateContinueBtn() {
+  document.getElementById('continue-btn').disabled = !(selectedStyle || visionText);
+}
+
+function goToUpload() {
+  const style = visionText || selectedStyle;
+  if (!style) return;
+  document.getElementById('selected-style-label').textContent = style.length > 60 ? style.slice(0,57)+'...' : style;
+  showView('upload-view');
+}
+
+function goBack() { showView('style-view'); }
+
+function goHome() {
+  currentDataUrl = null; currentFileName = null; currentResult = null; suggestedStyle = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('override-input').value = '';
+  document.getElementById('downloaded-note').style.display = 'none';
+  document.getElementById('style-suggestion').style.display = 'none';
+  closeDetail();
+  showView('style-view');
+}
+
+function analyzeAsSuggested() {
+  if (!currentDataUrl || !suggestedStyle) return;
+  selectedStyle = suggestedStyle;
+  visionText = null;
+  document.getElementById('score-style').textContent = suggestedStyle;
+  document.getElementById('style-suggestion').style.display = 'none';
+  analyze(currentDataUrl, currentFileName, suggestedStyle);
+}
+
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  currentFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { currentDataUrl = e.target.result; document.getElementById('override-input').value = ''; analyze(currentDataUrl, currentFileName, null); };
+  reader.readAsDataURL(file);
+}
+
+function reanalyze() {
+  const override = document.getElementById('override-input').value.trim();
+  if (!currentDataUrl || !override) return;
+  const btn = document.getElementById('override-btn');
+  btn.disabled = true; btn.textContent = 'Analysing...';
+  analyze(currentDataUrl, currentFileName, override).finally(() => { btn.disabled = false; btn.textContent = 'Reanalyse'; });
+}
+
+function showView(id) {
+  ['style-view','upload-view','analyzing-view','results-view','error-view'].forEach(v => {
+    document.getElementById(v).style.display = v === id ? 'block' : 'none';
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function compressImage(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1024;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function analyze(dataUrl, fileName, styleOverride) {
+  showView('analyzing-view');
+  document.getElementById('analyzing-file').textContent = fileName || '';
+  const style = styleOverride || visionText || selectedStyle || 'photographic';
+  const image = await compressImage(dataUrl);
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image, style, customStyle: styleOverride || null })
+    });
+    const data = await res.json();
+    if (!res.ok) { showView('error-view'); document.getElementById('error-msg').textContent = data.error || 'Something went wrong.'; return; }
+    currentResult = data;
+    renderResults(data, dataUrl, fileName);
+  } catch (err) {
+    showView('error-view');
+    document.getElementById('error-msg').textContent = 'Could not reach the server. Check your connection and try again.\n\nDetail: ' + err.message;
+  }
+}
+
+function renderResults(d, dataUrl, fileName) {
+  document.getElementById('results-filename').textContent = fileName || '';
+  document.getElementById('result-photo').src = dataUrl;
+  document.getElementById('score-style').textContent = d.style || '';
+  document.getElementById('score-label').textContent = d.score_label || '';
+  document.getElementById('score-num').textContent = d.score || 0;
+  document.getElementById('score-away').innerHTML = `<strong>${d.points_away || (100-(d.score||0))} points</strong> away from fully realising this style.`;
+  document.getElementById('encouragement').textContent = d.encouragement || '';
+  document.getElementById('why-text').textContent = d.why_it_reads || '';
+  document.getElementById('composition-text').textContent = d.composition || 'No composition notes for this photo.';
+  document.getElementById('masking-text').textContent = d.masking || 'No masking suggestions for this photo.';
+
+  setTimeout(() => { document.getElementById('score-bar-fill').style.width = (d.score || 0) + '%'; }, 150);
+
+  document.getElementById('missing-list').innerHTML = (d.whats_missing || []).map(m => `
+    <div class="missing-item"><div class="missing-dot"></div><p class="missing-text">${m}</p></div>`).join('');
+
+  document.getElementById('corr-table').innerHTML = (d.corrections || []).map(c => `
+    <tr class="corr-tr">
+      <td class="corr-name">${c.name}</td>
+      <td class="corr-val">${c.value}</td>
+      <td class="corr-reason">${c.reason}</td>
+    </tr>`).join('');
+
+  buildAnnotations(d.corrections || []);
+
+  // Style suggestion when low score
+  const suggestionEl = document.getElementById('style-suggestion');
+  if (d.score < 55 && d.alternative_style) {
+    suggestedStyle = d.alternative_style;
+    document.getElementById('style-suggestion-text').textContent = d.alternative_note || `This photo doesn't quite read as ${d.style} — it looks closer to ${d.alternative_style}. Want Tonal to score it against that instead?`;
+    document.getElementById('style-suggestion-btn').textContent = `Analyse as "${d.alternative_style}" instead`;
+    suggestionEl.style.display = 'block';
+  } else {
+    suggestionEl.style.display = 'none';
+  }
+
+  const styleSafe = (d.style || 'Tonal').replace(/[^a-zA-Z0-9]/g, '');
+  document.getElementById('download-btn').setAttribute('data-filename', `Tonal_${styleSafe}_${d.score||0}pct.xmp`);
+  document.getElementById('downloaded-note').style.display = 'none';
+  showView('results-view');
+}
+
+function downloadPreset() {
+  if (!currentResult) return;
+  const d = currentResult;
+  const corrections = d.corrections || [];
+  const parseVal = val => { const n = parseFloat(String(val).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
+  const getCorr = names => { for (const name of names) { const f = corrections.find(c => c.name.toLowerCase().includes(name.toLowerCase())); if (f) return parseVal(f.value); } return 0; };
+  const xmp = `<?xml version="1.0" encoding="utf-8"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about=""
+      xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+      crs:PresetType="Normal"
+      crs:Supports="Camera Raw 7.0 and later"
+      crs:Name="Tonal — ${(d.style||'').replace(/[^a-zA-Z0-9 ]/g,'')} (${d.score||0}%)"
+      crs:Description="Reference preset by Tonal. Study it — then get there yourself."
+      crs:Exposure2012="${getCorr(['exposure']).toFixed(2)}"
+      crs:Highlights2012="${getCorr(['highlight']).toFixed(0)}"
+      crs:Shadows2012="${getCorr(['shadow']).toFixed(0)}"
+      crs:Blacks2012="${getCorr(['black']).toFixed(0)}"
+      crs:Whites2012="${getCorr(['white']).toFixed(0)}"
+      crs:Temp="${(getCorr(['temp','white balance'])+5500).toFixed(0)}"
+      crs:Vibrance="${getCorr(['vibrance']).toFixed(0)}"
+      crs:Saturation="${getCorr(['saturation']).toFixed(0)}"
+      crs:GrainAmount="${Math.abs(getCorr(['grain'])).toFixed(0)}"
+      crs:GrainSize="${(getCorr(['grain size'])||25).toFixed(0)}"
+      crs:GrainFrequency="50"
+      crs:Clarity2012="${getCorr(['clarity']).toFixed(0)}"
+      crs:Contrast2012="${getCorr(['contrast']).toFixed(0)}"
+    />
+  </rdf:RDF>
+</x:xmpmeta>`;
+  const btn = document.getElementById('download-btn');
+  const blob = new Blob([xmp], { type: 'application/xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = btn.getAttribute('data-filename') || 'Tonal_preset.xmp'; a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('downloaded-note').style.display = 'block';
+}
+</script>
+</body>
+</html>
