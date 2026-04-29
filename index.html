@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tonal — See what your photos are missing.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#111d10;--bg2:#182416;--bg3:#1f2e1c;
+      --b1:rgba(255,255,255,0.08);--b2:rgba(255,255,255,0.14);
+      --text:#e8e4da;--mid:#8a9e84;--dim:#4a5e46;
+      --accent:#c4722a;--accent2:#e8934a;--al:rgba(196,114,42,0.12);
+      --serif:'Cormorant Garamond',Georgia,serif;
+      --sans:'DM Sans',system-ui,sans-serif;
+      --mono:'DM Mono',monospace;
+      --nav:62px;
+    }
+    html{font-size:17px}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);font-weight:300;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
+    ::selection{background:var(--accent);color:#fff}
+    input,button,textarea{font-family:var(--sans)}
+
+    /* NAV */
+    nav{display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;height:var(--nav);border-bottom:1px solid var(--b1);position:sticky;top:0;background:rgba(17,29,16,0.97);backdrop-filter:blur(16px);z-index:200}
+    .logo{font-family:var(--serif);font-size:1.6rem;font-weight:400;letter-spacing:.08em;color:var(--accent2);cursor:pointer}
+    .nav-auth{display:flex;align-items:center;gap:.7rem}
+    .nav-user{font-size:.78rem;color:var(--mid);font-family:var(--mono)}
+    .nav-btn{font-size:.78rem;background:none;border:1px solid var(--b1);color:var(--mid);padding:.32rem .8rem;border-radius:4px;cursor:pointer;transition:all .2s}
+    .nav-btn:hover{border-color:var(--b2);color:var(--text)}
+    .nav-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .nav-btn.primary:hover{opacity:.85}
+
+    /* MAIN */
+    main{max-width:940px;margin:0 auto;padding:0 2rem 6rem}
+
+    /* WELCOME */
+    #welcome-view{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - var(--nav));text-align:center;padding:2rem}
+    .w-logo{font-family:var(--serif);font-size:clamp(4rem,10vw,7rem);font-weight:300;letter-spacing:.1em;color:var(--accent2);line-height:1;margin-bottom:1rem}
+    .w-line{width:1px;height:60px;background:var(--b1);margin:0 auto 2rem}
+    .w-tag{font-family:var(--serif);font-style:italic;font-size:clamp(1rem,2.5vw,1.4rem);color:var(--mid);margin-bottom:.8rem}
+    .w-desc{font-size:.92rem;color:var(--dim);max-width:380px;line-height:1.8;margin-bottom:3rem}
+    .w-btn{background:var(--accent);color:#fff;border:none;padding:1rem 3rem;border-radius:6px;font-size:1rem;letter-spacing:.06em;cursor:pointer;transition:opacity .2s}
+    .w-btn:hover{opacity:.85}
+
+    /* SHARED */
+    .eyebrow{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:.9rem}
+    .sec-label{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:500;margin-bottom:.5rem}
+    .divider-lbl{font-size:.8rem;color:var(--mid);text-align:center;margin:1.6rem 0 1.2rem;display:flex;align-items:center;gap:1rem}
+    .divider-lbl::before,.divider-lbl::after{content:'';flex:1;height:1px;background:var(--b1)}
+
+    /* STEP 1 — STYLE */
+    #style-view{display:none;padding-top:4rem}
+    .style-headline{font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.8rem);font-weight:300;line-height:1.1;margin-bottom:1rem}
+    .style-headline em{font-style:italic;color:var(--accent2)}
+    .style-sub{font-size:1rem;color:var(--mid);line-height:1.8;max-width:500px;margin-bottom:2rem}
+    .vision-box{background:var(--bg2);border:1px solid var(--b2);border-radius:8px;padding:1.4rem 1.6rem;transition:border-color .2s}
+    .vision-box:focus-within{border-color:var(--accent2)}
+    .vision-label{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:500;margin-bottom:.7rem}
+    .vision-ta{width:100%;background:transparent;border:none;outline:none;font-size:1rem;color:var(--text);line-height:1.75;resize:none;min-height:90px}
+    .vision-ta::placeholder{color:var(--dim);font-style:italic}
+    .style-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .style-card{border:1px solid var(--b1);border-radius:8px;overflow:hidden;cursor:pointer;transition:all .2s;background:var(--bg2)}
+    .style-card:hover{border-color:var(--accent2);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+    .style-card.selected{border:2px solid var(--accent);background:var(--al)}
+    .sc-swatch{height:64px}
+    .sc-body{padding:10px 12px 12px}
+    .sc-name{font-family:var(--serif);font-size:1.02rem;font-weight:400;color:var(--text);margin-bottom:2px;line-height:1.2}
+    .sc-desc{font-size:.76rem;color:var(--mid);line-height:1.5}
+    .style-detail{display:none;border:1px solid var(--b2);border-radius:8px;padding:1.5rem 1.8rem;margin-top:12px;background:var(--bg2);position:relative}
+    .style-detail.visible{display:block}
+    .sd-close{position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;color:var(--mid);font-size:20px;line-height:1}
+    .sd-ey{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+    .sd-name{font-family:var(--serif);font-size:1.4rem;font-weight:400;margin-bottom:.4rem}
+    .sd-desc{font-size:.9rem;color:var(--mid);line-height:1.8;margin-bottom:1rem}
+    .sd-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.2rem}
+    .sd-tag{font-size:.68rem;padding:3px 9px;border:1px solid var(--b1);border-radius:20px;color:var(--mid)}
+    .sd-bmarks{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+    .bm-item{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-bottom:1px solid var(--b1)}
+    .bm-key{color:var(--mid)}
+    .bm-val{font-family:var(--mono);color:var(--accent);font-size:.72rem}
+    .continue-btn{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:6px;font-size:.95rem;letter-spacing:.04em;cursor:pointer;transition:opacity .2s;margin-top:14px}
+    .continue-btn:hover{opacity:.85}
+    .continue-btn:disabled{opacity:.25;cursor:not-allowed}
+
+    /* LIMIT BANNER */
+    .limit-banner{display:none;background:rgba(196,114,42,.1);border:1px solid rgba(196,114,42,.3);border-radius:6px;padding:.9rem 1.2rem;margin-bottom:14px;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+    .limit-banner.show{display:flex}
+    .limit-text{font-size:.85rem;color:var(--text);line-height:1.5}
+    .limit-text strong{color:var(--accent2)}
+    .upgrade-btn{background:var(--accent);color:#fff;border:none;padding:.5rem 1rem;border-radius:4px;font-size:.8rem;cursor:pointer;white-space:nowrap}
+
+    /* STEP 2 — UPLOAD */
+    #upload-view{display:none;padding-top:4rem}
+    .back-btn{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--mid);background:none;border:none;cursor:pointer;margin-bottom:2rem;padding:0;transition:color .2s}
+    .back-btn:hover{color:var(--text)}
+    .selected-tag{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);background:var(--al);border:1px solid rgba(196,114,42,.3);padding:5px 14px;border-radius:20px;margin-bottom:1.6rem}
+    .upload-headline{font-family:var(--serif);font-size:clamp(2rem,4vw,3.4rem);font-weight:300;line-height:1.1;margin-bottom:2.2rem}
+    .upload-headline em{font-style:italic;color:var(--accent2)}
+    .drop-zone{border:1.5px dashed var(--b2);border-radius:8px;padding:4.5rem 2rem;text-align:center;cursor:pointer;background:var(--bg2);transition:all .2s}
+    .drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:var(--al)}
+    .drop-icon{width:52px;height:52px;border-radius:50%;border:1px solid var(--b2);background:var(--bg3);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+    .drop-title{font-family:var(--serif);font-size:1.3rem;font-weight:400;margin-bottom:5px}
+    .drop-sub{font-size:.85rem;color:var(--mid)}
+    #file-input{display:none}
+
+    /* STEP 3 — ANALYZING */
+    #analyzing-view{display:none;padding-top:5rem;text-align:center}
+    .an-title{font-family:var(--serif);font-size:2.2rem;font-weight:300;margin-bottom:.5rem}
+    .an-sub{font-size:.9rem;color:var(--mid);margin-top:4px}
+    .film-strip{display:flex;gap:4px;justify-content:center;margin:2.5rem auto}
+    .ff{width:13px;height:20px;background:var(--bg3);border-radius:2px;animation:fp 1.2s ease-in-out infinite}
+    .ff:nth-child(1){animation-delay:0s}.ff:nth-child(2){animation-delay:.15s}.ff:nth-child(3){animation-delay:.3s}.ff:nth-child(4){animation-delay:.45s}.ff:nth-child(5){animation-delay:.6s}
+    @keyframes fp{0%,100%{background:var(--bg3)}50%{background:var(--accent)}}
+
+    /* STEP 4 — RESULTS */
+    #results-view{display:none;padding-top:2.5rem}
+    .results-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+    .photo-panel{position:sticky;top:calc(var(--nav) + 8px)}
+    .photo-wrap{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--b1)}
+    .photo-wrap img{width:100%;display:block;max-height:380px;object-fit:cover}
+    .photo-overlay{position:absolute;inset:0;pointer-events:none}
+    .annotation{position:absolute;pointer-events:all;z-index:5}
+    .annotation-icon{width:26px;height:26px;border-radius:4px;background:rgba(17,29,16,.82);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;transition:all .18s;cursor:pointer;position:relative;z-index:5}
+    .annotation:hover .annotation-icon{background:var(--accent);transform:scale(1.12);z-index:25}
+    .annotation-tooltip{position:absolute;left:32px;top:50%;transform:translateY(-50%);background:rgba(17,29,16,.97);border:1px solid var(--b2);border-radius:7px;padding:9px 13px;width:185px;font-size:.75rem;color:var(--text);line-height:1.55;pointer-events:none;opacity:0;transition:opacity .18s;z-index:30;white-space:normal;backdrop-filter:blur(8px);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+    .annotation-tooltip strong{color:var(--accent2);display:block;margin-bottom:3px;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em}
+    .annotation:hover .annotation-tooltip{opacity:1}
+    .annotation.flip .annotation-tooltip{left:auto;right:32px}
+    .score-strip{margin-top:10px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:1.2rem 1.4rem}
+    .ss-style{font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:3px}
+    .ss-label{font-family:var(--serif);font-size:.95rem;color:var(--mid)}
+    .ss-top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px}
+    .ss-num{font-family:var(--serif);font-size:3.8rem;font-weight:300;color:var(--accent2);line-height:1}
+    .ss-denom{font-size:.75rem;color:var(--dim);text-align:right}
+    .ss-bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:8px}
+    .ss-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1.2s ease}
+    .ss-away{font-size:.82rem;color:var(--mid)}
+    .ss-away strong{color:var(--text);font-weight:500}
+    .encouragement{margin-top:10px;padding-top:10px;border-top:1px solid var(--b1);font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--mid);line-height:1.6}
+    .style-suggestion{background:var(--bg3);border:1px solid var(--accent);border-radius:8px;padding:1.1rem 1.3rem;margin-top:10px}
+    .ss-sug-label{font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:5px}
+    .ss-sug-text{font-size:.88rem;color:var(--text);line-height:1.65;margin-bottom:10px}
+    .ss-sug-btn{background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:5px;font-size:.82rem;cursor:pointer;transition:opacity .2s}
+    .ss-sug-btn:hover{opacity:.85}
+    .analysis-panel{display:flex;flex-direction:column;gap:12px}
+    .ab{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;overflow:hidden}
+    .ab-head{padding:.85rem 1.4rem;border-bottom:1px solid var(--b1);background:var(--bg3)}
+    .ab-body{padding:1.1rem 1.4rem}
+    .ab-text{font-size:.95rem;color:var(--text);line-height:1.85}
+    .missing-list{display:flex;flex-direction:column;gap:9px}
+    .missing-item{display:flex;gap:10px;align-items:flex-start}
+    .missing-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:9px;flex-shrink:0}
+    .missing-text{font-size:.92rem;color:var(--text);line-height:1.75}
+    .corr-table{width:100%;border-collapse:collapse}
+    .corr-tr{border-bottom:1px solid var(--b1)}
+    .corr-tr:last-child{border-bottom:none}
+    .corr-name{font-size:.84rem;font-weight:500;color:var(--text);padding:9px 0;width:115px;vertical-align:top}
+    .corr-val{font-size:.8rem;font-family:var(--mono);color:var(--accent2);padding:9px 10px 9px 0;width:90px;vertical-align:top}
+    .corr-reason{font-size:.76rem;color:var(--mid);line-height:1.55;padding:9px 0;vertical-align:top}
+    .preset-block{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:1.3rem}
+    .preset-desc{font-size:.88rem;color:var(--mid);line-height:1.8;margin-bottom:1.1rem}
+    .preset-desc strong{color:var(--text);font-weight:500}
+    .download-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--accent);color:#fff;border:none;padding:13px;border-radius:6px;font-size:.88rem;letter-spacing:.04em;cursor:pointer;transition:opacity .2s}
+    .download-btn:hover{opacity:.85}
+    .downloaded-note{display:none;margin-top:10px;padding:11px 13px;background:var(--bg3);border-radius:6px;font-size:.8rem;color:var(--mid);line-height:1.7;border:1px solid var(--b1)}
+    .downloaded-note strong{color:var(--text);font-weight:500}
+    .override-block{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:1.3rem}
+    .override-desc{font-size:.86rem;color:var(--mid);line-height:1.7;margin-bottom:10px}
+    .override-row{display:flex;gap:8px}
+    .override-input{flex:1;border:1px solid var(--b1);border-radius:6px;padding:9px 12px;font-size:.88rem;color:var(--text);background:var(--bg3);outline:none;transition:border-color .2s}
+    .override-input:focus{border-color:var(--accent)}
+    .override-input::placeholder{color:var(--dim)}
+    .override-btn{background:var(--bg3);color:var(--text);border:1px solid var(--b2);padding:9px 14px;border-radius:6px;font-size:.84rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .override-btn:hover{border-color:var(--accent);color:var(--accent2)}
+    .override-btn:disabled{opacity:.4;cursor:not-allowed}
+    .results-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.8rem;gap:1rem;flex-wrap:wrap}
+    .results-filename{font-size:.72rem;color:var(--dim);font-family:var(--mono);margin-bottom:4px}
+    .results-title{font-family:var(--serif);font-size:1.8rem;font-weight:300}
+    .new-btn{background:none;border:1px solid var(--b1);color:var(--mid);padding:8px 16px;border-radius:6px;font-size:.8rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .new-btn:hover{border-color:var(--b2);color:var(--text)}
+
+    /* ERROR */
+    #error-view{display:none;padding-top:5rem;text-align:center}
+    .err-title{font-family:var(--serif);font-size:1.8rem;font-weight:300;margin-bottom:1rem}
+    .err-msg{font-size:.9rem;color:var(--mid);max-width:480px;margin:0 auto 2rem;line-height:1.75;background:var(--bg2);padding:1.2rem 1.4rem;border-radius:6px;text-align:left;border:1px solid var(--b1)}
+    .err-retry{background:var(--accent);color:#fff;border:none;padding:12px 2rem;border-radius:6px;cursor:pointer;font-size:.9rem}
+
+    /* AUTH MODAL */
+    .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(17,29,16,.75);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .modal-backdrop.open{display:flex}
+    .modal{background:var(--bg2);border:1px solid var(--b2);border-radius:10px;padding:2rem;width:100%;max-width:400px;margin:1rem;position:relative}
+    .modal-logo{font-family:var(--serif);font-size:1.4rem;font-weight:400;letter-spacing:.08em;color:var(--accent2);margin-bottom:1.4rem}
+    .modal-tabs{display:flex;margin-bottom:1.4rem;border:1px solid var(--b1);border-radius:6px;overflow:hidden}
+    .modal-tab{flex:1;padding:.55rem;font-size:.82rem;cursor:pointer;border:none;background:transparent;color:var(--mid);transition:all .2s}
+    .modal-tab.active{background:var(--text);color:var(--bg)}
+    .modal-field{width:100%;border:1px solid var(--b1);border-radius:6px;padding:.7rem .9rem;font-size:.9rem;color:var(--text);background:var(--bg3);outline:none;margin-bottom:.8rem}
+    .modal-field:focus{border-color:var(--accent)}
+    .modal-submit{width:100%;background:var(--accent);color:#fff;border:none;padding:.8rem;border-radius:6px;font-size:.9rem;cursor:pointer;transition:opacity .2s}
+    .modal-submit:hover{opacity:.85}
+    .modal-submit:disabled{opacity:.4;cursor:not-allowed}
+    .modal-err{font-size:.82rem;color:#e05a4e;margin-bottom:.8rem;display:none}
+    .modal-suc{font-size:.82rem;color:#5a9e6f;margin-bottom:.8rem;display:none}
+    .modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;cursor:pointer;color:var(--mid);font-size:22px;line-height:1}
+
+    /* HISTORY PANEL */
+    .history-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--bg2);border-left:1px solid var(--b1);z-index:250;transition:right .3s ease;display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.4)}
+    .history-panel.open{right:0}
+    .hp-head{padding:1.2rem 1.4rem;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .hp-title{font-family:var(--serif);font-size:1.1rem;font-weight:400}
+    .hp-close{background:none;border:none;cursor:pointer;color:var(--mid);font-size:22px;line-height:1}
+    .hp-list{flex:1;overflow-y:auto;padding:.8rem}
+    .hp-empty{padding:2rem;text-align:center;font-size:.88rem;color:var(--dim);line-height:1.6}
+    .hp-item{padding:.9rem 1rem;border:.5px solid var(--b1);border-radius:8px;margin-bottom:.6rem;cursor:pointer;transition:background .2s}
+    .hp-item:hover{background:var(--bg3)}
+    .hp-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.3rem}
+    .hp-style{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:500}
+    .hp-score{font-family:var(--serif);font-size:1.6rem;font-weight:300;color:var(--accent2);line-height:1}
+    .hp-label{font-size:.8rem;color:var(--mid)}
+    .hp-date{font-size:.7rem;color:var(--dim);font-family:var(--mono);margin-top:4px}
+    .hp-bar{height:2px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:5px}
+    .hp-fill{height:100%;background:var(--accent);border-radius:2px}
+
+    @media(max-width:700px){
+      .results-layout{grid-template-columns:1fr}
+      .photo-panel{position:static}
+      nav{padding:0 1.2rem}
+      main{padding:0 1rem 4rem}
+      .style-grid{grid-template-columns:1fr 1fr}
+      .corr-reason{display:none}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="goHome()">Tonal</div>
+  <div class="nav-auth">
+    <span class="nav-user" id="nav-user" style="display:none"></span>
+    <button class="nav-btn" id="nav-history-btn" style="display:none" onclick="toggleHistory()">History</button>
+    <button class="nav-btn primary" id="nav-login-btn" onclick="openAuthModal()">Log in</button>
+    <button class="nav-btn" id="nav-logout-btn" style="display:none" onclick="logout()">Log out</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- WELCOME -->
+<div id="welcome-view">
+  <p class="w-logo">Tonal</p>
+  <div class="w-line"></div>
+  <p class="w-tag">The tool that helps you see<br/>what your photos are missing.</p>
+  <p class="w-desc">Tell Tonal the style you're going for. Upload your photo. Get a score, an honest analysis, and a clear path to a better edit.</p>
+  <button class="w-btn" onclick="showView('style-view')">Get started</button>
+</div>
+
+<!-- STEP 1: STYLE PICKER -->
+<div id="style-view" style="display:none">
+  <div class="limit-banner" id="limit-banner">
+    <p class="limit-text"><strong id="limit-msg">You've used all 5 free analyses this month.</strong> Upgrade to Tonal Pro for unlimited.</p>
+    <button class="upgrade-btn" onclick="openAuthModal()">Upgrade</button>
+  </div>
+  <p class="eyebrow" style="margin-top:3.5rem">Step 1 of 2</p>
+  <h1 class="style-headline">What style are you<br/><em>going for?</em></h1>
+  <p class="style-sub">Describe your vision or choose from the styles below. Tonal scores your photo against your specific intent.</p>
+
+  <div class="vision-box" style="margin-bottom:0">
+    <p class="vision-label">Describe the vision for your photo</p>
+    <textarea class="vision-ta" id="vision-input" rows="3" placeholder="e.g. I want it to feel like a summer road trip in the 70s — warm, slightly overexposed, grainy, faded Kodachrome look..." oninput="onVisionInput()"></textarea>
+  </div>
+
+  <div class="divider-lbl">or choose from the styles below</div>
+
+  <div class="style-grid" id="style-grid">
+    <div class="style-card" onclick="selectStyle(this,'Rich 35mm film','rich35mm')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#c4956a,#5c3520)"></div>
+      <div class="sc-body"><p class="sc-name">Rich 35mm film</p><p class="sc-desc">Warm lifted shadows, organic grain, analogue character.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'Clean natural light','clean')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#d8d5ce,#a8a49d)"></div>
+      <div class="sc-body"><p class="sc-name">Clean natural light</p><p class="sc-desc">High key, neutral palette, open honest light.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'Moody overcast','moody')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#2a2e35,#0d0f12)"></div>
+      <div class="sc-body"><p class="sc-name">Moody overcast</p><p class="sc-desc">Deep shadows, cool desaturated, atmospheric.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'Vivid street colour','vivid')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#e85d20,#2a8a4a)"></div>
+      <div class="sc-body"><p class="sc-name">Vivid street colour</p><p class="sc-desc">High saturation, bold primaries, colour is the subject.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'Golden hour','golden')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#f5c842,#c4622a)"></div>
+      <div class="sc-body"><p class="sc-name">Golden hour</p><p class="sc-desc">Amber-orange palette, glowing highlights.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'Classic black and white','bw')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#d8d8d8,#111)"></div>
+      <div class="sc-body"><p class="sc-name">Classic black &amp; white</p><p class="sc-desc">Full tonal range, rich grain, light and shadow.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'Muted editorial','editorial')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#c0b8b0,#726860)"></div>
+      <div class="sc-body"><p class="sc-name">Muted editorial</p><p class="sc-desc">Pulled-back saturation, cool and deliberate.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'High contrast street','highcontrast')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#e8e4e0,#050505)"></div>
+      <div class="sc-body"><p class="sc-name">High contrast street</p><p class="sc-desc">Deep blacks, bright highlights, graphic and bold.</p></div>
+    </div>
+    <div class="style-card" onclick="selectStyle(this,'Dreamy soft focus','dreamy')">
+      <div class="sc-swatch" style="background:linear-gradient(135deg,#e8c8c8,#a89898,#8a7878)"></div>
+      <div class="sc-body"><p class="sc-name">Dreamy soft focus</p><p class="sc-desc">Pastel haze, lifted shadows, ethereal and romantic.</p></div>
+    </div>
+  </div>
+
+  <div class="style-detail" id="style-detail">
+    <button class="sd-close" onclick="closeDetail()">×</button>
+    <p class="sd-ey" id="sd-eyebrow"></p>
+    <p class="sd-name" id="sd-name"></p>
+    <p class="sd-desc" id="sd-desc"></p>
+    <div class="sd-tags" id="sd-tags"></div>
+    <p class="sec-label" style="margin-bottom:8px">What 100/100 looks like</p>
+    <div class="sd-bmarks" id="sd-bmarks"></div>
+  </div>
+
+  <button class="continue-btn" id="continue-btn" onclick="goToUpload()" disabled>This is what I'm going for — continue →</button>
+</div>
+
+<!-- STEP 2: UPLOAD -->
+<div id="upload-view" style="display:none">
+  <button class="back-btn" onclick="goBack()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Change style
+  </button>
+  <div class="selected-tag">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="selected-style-label"></span>
+  </div>
+  <h2 class="upload-headline">Now upload<br/>your <em>photo.</em></h2>
+  <input type="file" id="file-input" accept="image/*"/>
+  <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div class="drop-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--mid)" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <p class="drop-title">Drop your photo here</p>
+    <p class="drop-sub">or click to browse — JPG, PNG, WEBP</p>
+  </div>
+</div>
+
+<!-- STEP 3: ANALYZING -->
+<div id="analyzing-view" style="display:none">
+  <p class="eyebrow" style="text-align:center;padding-top:5rem">Reading your photo</p>
+  <p class="an-title" style="text-align:center">Finding what's missing...</p>
+  <p class="an-sub" id="analyzing-file" style="text-align:center"></p>
+  <div class="film-strip"><div class="ff"></div><div class="ff"></div><div class="ff"></div><div class="ff"></div><div class="ff"></div></div>
+  <p style="font-size:.85rem;color:var(--mid);text-align:center">Studying colour, contrast, light, composition, and style</p>
+</div>
+
+<!-- STEP 4: RESULTS -->
+<div id="results-view" style="display:none">
+  <div class="results-top">
+    <div>
+      <p class="results-filename" id="results-filename"></p>
+      <p class="results-title">Your analysis</p>
+    </div>
+    <button class="new-btn" onclick="goHome()">Analyse another photo</button>
+  </div>
+  <div class="results-layout">
+    <div class="photo-panel">
+      <div class="photo-wrap">
+        <img id="result-photo" alt="Your photo"/>
+        <div class="photo-overlay" id="photo-overlay"></div>
+      </div>
+      <div class="score-strip">
+        <div class="ss-top">
+          <div><p class="ss-style" id="ss-style"></p><p class="ss-label" id="ss-label"></p></div>
+          <div><p class="ss-num" id="ss-num"></p><p class="ss-denom">out of 100</p></div>
+        </div>
+        <div class="ss-bar"><div class="ss-fill" id="ss-fill" style="width:0%"></div></div>
+        <p class="ss-away" id="ss-away"></p>
+        <p class="encouragement" id="encouragement"></p>
+      </div>
+      <div class="style-suggestion" id="style-suggestion" style="display:none">
+        <p class="ss-sug-label">Tonal noticed something</p>
+        <p class="ss-sug-text" id="sug-text"></p>
+        <button class="ss-sug-btn" id="sug-btn" onclick="analyzeAsSuggested()">Analyse as this style instead</button>
+      </div>
+    </div>
+    <div class="analysis-panel">
+      <div class="ab">
+        <div class="ab-head"><p class="sec-label" style="margin-bottom:0">Why it reads this way</p></div>
+        <div class="ab-body"><p class="ab-text" id="why-text"></p></div>
+      </div>
+      <div class="ab">
+        <div class="ab-head"><p class="sec-label" style="margin-bottom:0">What's holding it back</p></div>
+        <div class="ab-body"><div class="missing-list" id="missing-list"></div></div>
+      </div>
+      <div class="ab">
+        <div class="ab-head"><p class="sec-label" style="margin-bottom:0">Composition</p></div>
+        <div class="ab-body"><p class="ab-text" id="composition-text"></p></div>
+      </div>
+      <div class="ab">
+        <div class="ab-head"><p class="sec-label" style="margin-bottom:0">Masking opportunities</p></div>
+        <div class="ab-body"><p class="ab-text" id="masking-text"></p></div>
+      </div>
+      <div class="ab">
+        <div class="ab-head" style="display:flex;justify-content:space-between;align-items:center">
+          <p class="sec-label" style="margin-bottom:0">Corrections to close the gap</p>
+          <p style="font-size:.68rem;color:var(--dim);font-family:var(--mono)">Lightroom / Capture One</p>
+        </div>
+        <div style="padding:.4rem 1.4rem 1rem"><table class="corr-table" id="corr-table"></table></div>
+      </div>
+      <div class="preset-block">
+        <p class="sec-label">Reference preset</p>
+        <p class="preset-desc">This <strong>.xmp file</strong> shows what your photo looks like at 100. Open it next to your own edit, study the difference, then get there yourself. <strong>The goal is to not need it.</strong></p>
+        <button class="download-btn" id="download-btn" onclick="downloadPreset()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download reference preset (.xmp)
+        </button>
+        <div class="downloaded-note" id="downloaded-note">
+          <strong>To import in Lightroom:</strong> Develop module → Presets panel → click + → Import Presets → select the file. Apply, study what changed, then replicate it yourself.
+        </div>
+      </div>
+      <div class="override-block">
+        <p class="sec-label">Not quite right?</p>
+        <p class="override-desc">If Tonal misread your intended style, type it below and reanalyse.</p>
+        <div class="override-row">
+          <input type="text" class="override-input" id="override-input" placeholder="e.g. dreamy film portrait, harsh documentary..."/>
+          <button class="override-btn" id="override-btn" onclick="reanalyze()">Reanalyse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ERROR -->
+<div id="error-view" style="display:none">
+  <p class="err-title" style="padding-top:5rem">Something went wrong</p>
+  <p class="err-msg" id="error-msg"></p>
+  <button class="err-retry" onclick="goHome()">Start again</button>
+</div>
+
+</main>
+
+<!-- HISTORY PANEL -->
+<div class="history-panel" id="history-panel">
+  <div class="hp-head">
+    <p class="hp-title">Your analyses</p>
+    <button class="hp-close" onclick="closeHistory()">×</button>
+  </div>
+  <div class="hp-list" id="hp-list">
+    <p class="hp-empty">No analyses yet.<br/>Upload your first photo to get started.</p>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-backdrop" id="auth-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAuthModal()">×</button>
+    <p class="modal-logo">Tonal</p>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Log in</button>
+      <button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Sign up</button>
+    </div>
+    <p class="modal-err" id="auth-err"></p>
+    <p class="modal-suc" id="auth-suc"></p>
+    <input type="email" class="modal-field" id="auth-email" placeholder="Email address"/>
+    <input type="password" class="modal-field" id="auth-password" placeholder="Password"/>
+    <button class="modal-submit" id="auth-submit" data-mode="login" onclick="submitAuth()">Log in</button>
+  </div>
+</div>
+
+<script>
+// ── Style data ──
+const styleData = {
+  rich35mm:    {eyebrow:'Warm · Grainy · Organic',    desc:'Warm lifted shadows that never crush to pure black, organic luminance grain, slightly faded highlights with a gentle roll-off.',              tags:['Warm','Lifted blacks','Grain','Faded highlights','Analogue'],  benchmarks:[['Shadow lift','blacks +12 to +18'],['Grain','uniform, size 28–35'],['Highlight roll-off','gentle S-curve'],['Colour warmth','+200 to +350K'],['Saturation','moderate, not punchy']]},
+  clean:       {eyebrow:'Bright · Minimal · Airy',    desc:'Even diffused light, near-neutral white balance, open shadows that retain full detail, a palette that feels honest and unprocessed.',       tags:['Bright','Neutral','Open shadows','Diffused','Minimal'],         benchmarks:[['Exposure','even, no clipping'],['White balance','neutral ±150K'],['Shadows','fully open'],['Saturation','natural, not boosted'],['Contrast','gentle, no S-curve']]},
+  moody:       {eyebrow:'Dark · Atmospheric · Cool',  desc:'Deep intentional shadows that hold texture without fully crushing, a cool desaturated palette where blues and greys dominate.',            tags:['Dark','Cool','Desaturated','Atmospheric','Heavy'],               benchmarks:[['Shadow depth','deep but not crushed'],['Colour temp','cool −300 to −500K'],['Saturation','pulled −20 to −35'],['Contrast','strong S-curve'],['Highlights','subdued, no glow']]},
+  vivid:       {eyebrow:'Saturated · Bold · Energetic',desc:'Fully committed saturated primaries, warm daylight that makes colour glow. The subject exists to carry the colour.',                    tags:['Saturated','Warm','Bold','High contrast','Punchy'],              benchmarks:[['Saturation','vibrance +15, sat +10'],['Colour temp','warm +200 to +400K'],['Contrast','moderate, punchy'],['Highlights','controlled, not blown'],['Shadow warmth','slight warm tint']]},
+  golden:      {eyebrow:'Golden · Hazy · Nostalgic',  desc:'The entire palette sits in the amber-orange-red family, highlights glow without clipping, long directional shadows create depth.',      tags:['Warm','Amber','Glowing','Hazy','Nostalgic'],                     benchmarks:[['Highlight warmth','orange hue +15'],['Shadow warmth','amber tint'],['Haze','slight whites lift'],['Contrast','directional, not flat'],['Saturation','warm tones only']]},
+  bw:          {eyebrow:'Contrast · Texture · Timeless',desc:'The full tonal range is present — true blacks, clean whites, rich midtones. Grain adds texture rather than noise.',                   tags:['Monochrome','Full range','Grain','Contrast','Timeless'],          benchmarks:[['Tonal range','full, 0–255'],['Grain','luminance, not colour'],['Midtones','full separation'],['Black point','true black present'],['Highlights','no clipping']]},
+  editorial:   {eyebrow:'Muted · Refined · Cool',     desc:'Saturation pulled back but not to black and white. The palette leans cool and slightly faded. Highlights are never blown.',             tags:['Muted','Cool','Faded','Deliberate','Editorial'],                  benchmarks:[['Saturation','−25 to −40 overall'],['Colour temp','cool −150 to −300K'],['Highlights','fully recovered'],['Shadow detail','open, lifted'],['Contrast','subtle, no crush']]},
+  highcontrast:{eyebrow:'Punchy · Graphic · Stark',   desc:'The blacks are genuinely black and the whites genuinely white. Shadows are a design element that shape the composition.',              tags:['High contrast','Deep blacks','Graphic','Bold','Stark'],           benchmarks:[['Black point','fully crushed'],['White point','at or near clipping'],['Midtones','compressed'],['Contrast curve','aggressive S'],['Saturation','moderate or none']]},
+  dreamy:      {eyebrow:'Soft · Romantic · Ethereal', desc:'Gently lifted blacks and highlights, a pastel palette leaning warm or pink, and a haze that feels like memory rather than fog.',       tags:['Pastel','Soft','Lifted blacks','Haze','Romantic'],                benchmarks:[['Blacks','lift +20 to +30'],['Highlights','lift slightly'],['Saturation','soft, desaturated'],['Haze','clarity −10 to −20'],['Colour temp','warm +100 to +250K']]},
+};
+
+const annotationMap = [
+  {keywords:['highlight','white','blown','bright'], pos:[{x:70,y:10},{x:50,y:8}],  path:'<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>'},
+  {keywords:['shadow','black','dark','crush'],      pos:[{x:18,y:78},{x:32,y:82}], path:'<path d="M12 2a10 10 0 0 1 0 20V2z"/><circle cx="12" cy="12" r="10" fill="none"/>'},
+  {keywords:['grain','noise','texture'],            pos:[{x:55,y:50},{x:68,y:58}], path:'<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>'},
+  {keywords:['temp','white balance','warm','cool'], pos:[{x:25,y:30},{x:38,y:25}], path:'<polygon points="12 2 19 6.5 19 17.5 12 22 5 17.5 5 6.5"/>'},
+  {keywords:['saturation','colour','color','hue'],  pos:[{x:75,y:55},{x:60,y:42}], path:'<rect x="7" y="7" width="10" height="10" transform="rotate(45 12 12)"/>'},
+  {keywords:['contrast','curve'],                   pos:[{x:45,y:22},{x:28,y:65}], path:'<path d="M12 2a10 10 0 0 0 0 20V2z"/><circle cx="12" cy="12" r="10" fill="none"/>'},
+  {keywords:['clarity','sharp','detail'],           pos:[{x:48,y:48},{x:58,y:32}], path:'<line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="5.6" y2="18.4"/>'},
+  {keywords:['exposure'],                           pos:[{x:50,y:18},{x:62,y:72}], path:'<circle cx="12" cy="12" r="9"/>'},
+  {keywords:['green','red','orange','blue'],        pos:[{x:30,y:45},{x:72,y:35}], path:'<polygon points="12 3 21 12 12 21 3 12"/>'},
+];
+
+function buildAnnotations(corrections) {
+  const overlay = document.getElementById('photo-overlay');
+  if (!overlay) return;
+  overlay.innerHTML = '';
+  const used = new Set();
+  corrections.forEach((cor, i) => {
+    const txt = (cor.name + ' ' + cor.reason).toLowerCase();
+    let m = annotationMap.find(a => a.keywords.some(k => txt.includes(k))) || annotationMap[i % annotationMap.length];
+    let px = m.pos[i % m.pos.length].x;
+    let py = m.pos[i % m.pos.length].y;
+    const slot = `${Math.round(px/12)}_${Math.round(py/12)}`;
+    if (used.has(slot)) { px = Math.min(88,px+14); py = Math.min(85,py+8); }
+    used.add(slot);
+    const flip = px > 58;
+    const el = document.createElement('div');
+    el.className = 'annotation' + (flip ? ' flip' : '');
+    el.style.cssText = `left:${px}%;top:${py}%;`;
+    el.innerHTML = `<div class="annotation-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${m.path}</svg></div><div class="annotation-tooltip"><strong>${cor.name}</strong>${cor.value} — ${cor.reason}</div>`;
+    overlay.appendChild(el);
+  });
+}
+
+// ── App state ──
+let selectedStyle = null, visionText = null;
+let currentDataUrl = null, currentFileName = null, currentResult = null, suggestedStyle = null;
+let authToken = localStorage.getItem('tonal_token') || null;
+let currentUser = null, currentTier = 'free', analysesUsed = 0;
+
+// ── Views ──
+function showView(id) {
+  ['welcome-view','style-view','upload-view','analyzing-view','results-view','error-view'].forEach(v => {
+    const el = document.getElementById(v);
+    if (el) el.style.display = (v === id) ? 'block' : 'none';
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function goHome() {
+  currentDataUrl = null; currentFileName = null; currentResult = null; suggestedStyle = null;
+  const fi = document.getElementById('file-input'); if (fi) fi.value = '';
+  const oi = document.getElementById('override-input'); if (oi) oi.value = '';
+  const dn = document.getElementById('downloaded-note'); if (dn) dn.style.display = 'none';
+  const ss = document.getElementById('style-suggestion'); if (ss) ss.style.display = 'none';
+  closeDetail();
+  showView('welcome-view');
+}
+
+function goBack() { showView('style-view'); }
+
+// ── Style selection ──
+function onVisionInput() {
+  const val = document.getElementById('vision-input').value.trim();
+  visionText = val || null;
+  if (val) { document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected')); selectedStyle = null; closeDetail(); }
+  updateContinueBtn();
+}
+
+function selectStyle(card, name, key) {
+  document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedStyle = name; visionText = null;
+  document.getElementById('vision-input').value = '';
+  updateContinueBtn();
+  if (key && styleData[key]) showDetail(key, name);
+  else closeDetail();
+}
+
+function showDetail(key, name) {
+  const d = styleData[key]; if (!d) return;
+  document.getElementById('sd-eyebrow').textContent = d.eyebrow;
+  document.getElementById('sd-name').textContent = name;
+  document.getElementById('sd-desc').textContent = d.desc;
+  document.getElementById('sd-tags').innerHTML = d.tags.map(t => `<span class="sd-tag">${t}</span>`).join('');
+  document.getElementById('sd-bmarks').innerHTML = d.benchmarks.map(([k,v]) => `<div class="bm-item"><span class="bm-key">${k}</span><span class="bm-val">${v}</span></div>`).join('');
+  document.getElementById('style-detail').classList.add('visible');
+}
+
+function closeDetail() { document.getElementById('style-detail').classList.remove('visible'); }
+
+function updateContinueBtn() {
+  document.getElementById('continue-btn').disabled = !(selectedStyle || visionText);
+}
+
+function goToUpload() {
+  const style = visionText || selectedStyle;
+  if (!style) return;
+  document.getElementById('selected-style-label').textContent = style.length > 60 ? style.slice(0,57)+'...' : style;
+  showView('upload-view');
+}
+
+// ── Upload ──
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  currentFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { currentDataUrl = e.target.result; document.getElementById('override-input').value = ''; analyze(currentDataUrl, currentFileName, null); };
+  reader.readAsDataURL(file);
+}
+
+function reanalyze() {
+  const override = document.getElementById('override-input').value.trim();
+  if (!currentDataUrl || !override) return;
+  const btn = document.getElementById('override-btn');
+  btn.disabled = true; btn.textContent = 'Analysing...';
+  analyze(currentDataUrl, currentFileName, override).finally(() => { btn.disabled = false; btn.textContent = 'Reanalyse'; });
+}
+
+function analyzeAsSuggested() {
+  if (!currentDataUrl || !suggestedStyle) return;
+  selectedStyle = suggestedStyle; visionText = null;
+  document.getElementById('style-suggestion').style.display = 'none';
+  analyze(currentDataUrl, currentFileName, suggestedStyle);
+}
+
+// ── Compress ──
+function compressImage(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1024, scale = Math.min(1, MAX/Math.max(img.width,img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      resolve(c.toDataURL('image/jpeg',0.85).split(',')[1]);
+    };
+    img.src = dataUrl;
+  });
+}
+
+// ── Analyze ──
+async function analyze(dataUrl, fileName, styleOverride) {
+  showView('analyzing-view');
+  document.getElementById('analyzing-file').textContent = fileName || '';
+  const style = styleOverride || visionText || selectedStyle || 'photographic';
+  const image = await compressImage(dataUrl);
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', ...(authToken ? {'Authorization':`Bearer ${authToken}`} : {})},
+      body: JSON.stringify({image, style, customStyle: styleOverride || null})
+    });
+    const data = await res.json();
+    if (res.status === 403 && data.error === 'limit_reached') {
+      showView('error-view');
+      document.getElementById('error-msg').textContent = data.message;
+      openAuthModal();
+      return;
+    }
+    if (!res.ok) { showView('error-view'); document.getElementById('error-msg').textContent = data.error || 'Something went wrong.'; return; }
+    currentResult = data;
+    if (authToken) await saveAnalysis(data, dataUrl);
+    renderResults(data, dataUrl, fileName);
+  } catch(err) {
+    showView('error-view');
+    document.getElementById('error-msg').textContent = 'Could not reach the server. Check your connection.\n\nDetail: ' + err.message;
+  }
+}
+
+// ── Render results ──
+function renderResults(d, dataUrl, fileName) {
+  document.getElementById('results-filename').textContent = fileName || '';
+  document.getElementById('result-photo').src = dataUrl;
+  document.getElementById('ss-style').textContent = d.style || '';
+  document.getElementById('ss-label').textContent = d.score_label || '';
+  document.getElementById('ss-num').textContent = d.score || 0;
+  document.getElementById('ss-away').innerHTML = `<strong>${d.points_away || (100-(d.score||0))} points</strong> away from fully realising this style.`;
+  document.getElementById('encouragement').textContent = d.encouragement || '';
+  document.getElementById('why-text').textContent = d.why_it_reads || '';
+  document.getElementById('composition-text').textContent = d.composition || '';
+  document.getElementById('masking-text').textContent = d.masking || '';
+  setTimeout(() => { document.getElementById('ss-fill').style.width = (d.score||0)+'%'; }, 150);
+
+  document.getElementById('missing-list').innerHTML = (d.whats_missing||[]).map(m =>
+    `<div class="missing-item"><div class="missing-dot"></div><p class="missing-text">${m}</p></div>`).join('');
+
+  document.getElementById('corr-table').innerHTML = (d.corrections||[]).map(c =>
+    `<tr class="corr-tr"><td class="corr-name">${c.name}</td><td class="corr-val">${c.value}</td><td class="corr-reason">${c.reason}</td></tr>`).join('');
+
+  buildAnnotations(d.corrections||[]);
+
+  const suggEl = document.getElementById('style-suggestion');
+  if ((d.score||0) < 60) {
+    suggestedStyle = d.alternative_style || null;
+    document.getElementById('sug-text').textContent = d.alternative_note || (d.alternative_style ? `This reads more as ${d.alternative_style} than ${d.style}. Analyse as that instead?` : `Score of ${d.score} — try describing your intended style in the reanalyse box.`);
+    const sugBtn = document.getElementById('sug-btn');
+    sugBtn.style.display = d.alternative_style ? 'block' : 'none';
+    if (d.alternative_style) sugBtn.textContent = `Analyse as "${d.alternative_style}" instead`;
+    suggEl.style.display = 'block';
+  } else { suggEl.style.display = 'none'; }
+
+  const styleSafe = (d.style||'Tonal').replace(/[^a-zA-Z0-9]/g,'');
+  document.getElementById('download-btn').setAttribute('data-filename', `Tonal_${styleSafe}_${d.score||0}pct.xmp`);
+  document.getElementById('downloaded-note').style.display = 'none';
+  showView('results-view');
+}
+
+// ── Preset download ──
+function downloadPreset() {
+  if (!currentResult) return;
+  const d = currentResult, corrs = d.corrections||[];
+  const pv = val => { const n = parseFloat(String(val).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
+  const gc = names => { for (const n of names) { const f = corrs.find(c => c.name.toLowerCase().includes(n.toLowerCase())); if (f) return pv(f.value); } return 0; };
+  const xmp = `<?xml version="1.0" encoding="utf-8"?>\n<x:xmpmeta xmlns:x="adobe:ns:meta/">\n  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n    <rdf:Description rdf:about=""\n      xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"\n      crs:PresetType="Normal"\n      crs:Name="Tonal — ${(d.style||'').replace(/[^a-zA-Z0-9 ]/g,'')} (${d.score||0}%)"\n      crs:Description="Reference preset by Tonal. Study it — then get there yourself."\n      crs:Exposure2012="${gc(['exposure']).toFixed(2)}"\n      crs:Highlights2012="${gc(['highlight']).toFixed(0)}"\n      crs:Shadows2012="${gc(['shadow']).toFixed(0)}"\n      crs:Blacks2012="${gc(['black']).toFixed(0)}"\n      crs:Whites2012="${gc(['white']).toFixed(0)}"\n      crs:Temp="${(gc(['temp','white balance'])+5500).toFixed(0)}"\n      crs:Vibrance="${gc(['vibrance']).toFixed(0)}"\n      crs:Saturation="${gc(['saturation']).toFixed(0)}"\n      crs:GrainAmount="${Math.abs(gc(['grain'])).toFixed(0)}"\n      crs:GrainSize="${(gc(['grain size'])||25).toFixed(0)}"\n      crs:GrainFrequency="50"\n      crs:Clarity2012="${gc(['clarity']).toFixed(0)}"\n      crs:Contrast2012="${gc(['contrast']).toFixed(0)}"\n    />\n  </rdf:RDF>\n</x:xmpmeta>`;
+  const blob = new Blob([xmp],{type:'application/xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=document.getElementById('download-btn').getAttribute('data-filename')||'Tonal_preset.xmp'; a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('downloaded-note').style.display = 'block';
+}
+
+// ── Auth ──
+async function initAuth() {
+  if (!authToken) return;
+  try {
+    const res = await fetch('/api/auth', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'me',token:authToken})});
+    const data = await res.json();
+    if (data.user) { currentUser=data.user; currentTier=data.tier; analysesUsed=data.analyses_this_month; updateNavLoggedIn(); updateLimitBanner(); }
+    else { authToken=null; localStorage.removeItem('tonal_token'); }
+  } catch(e) {}
+}
+
+function updateNavLoggedIn() {
+  document.getElementById('nav-login-btn').style.display = 'none';
+  document.getElementById('nav-logout-btn').style.display = 'block';
+  document.getElementById('nav-history-btn').style.display = 'block';
+  const u = document.getElementById('nav-user');
+  u.style.display = 'block';
+  const tier = currentTier==='max'?'Max':currentTier==='pro'?'Pro':'Free';
+  u.textContent = currentUser.email.split('@')[0] + ' · ' + tier;
+}
+
+function updateLimitBanner() {
+  const banner = document.getElementById('limit-banner');
+  if (currentTier==='free' && analysesUsed >= 4) {
+    const rem = Math.max(0,5-analysesUsed);
+    document.getElementById('limit-msg').textContent = rem===0 ? "You've used all 5 free analyses this month." : `${rem} free ${rem===1?'analysis':'analyses'} remaining this month.`;
+    banner.classList.add('show');
+  } else { banner.classList.remove('show'); }
+}
+
+function openAuthModal() { document.getElementById('auth-modal').classList.add('open'); document.getElementById('auth-err').style.display='none'; document.getElementById('auth-suc').style.display='none'; }
+function closeAuthModal() { document.getElementById('auth-modal').classList.remove('open'); }
+document.getElementById('auth-modal').addEventListener('click', e => { if (e.target===e.currentTarget) closeAuthModal(); });
+
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('auth-submit').textContent = tab==='login'?'Log in':'Create account';
+  document.getElementById('auth-submit').dataset.mode = tab;
+  document.getElementById('auth-err').style.display='none';
+  document.getElementById('auth-suc').style.display='none';
+}
+
+async function submitAuth() {
+  const mode = document.getElementById('auth-submit').dataset.mode||'login';
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-err');
+  const sucEl = document.getElementById('auth-suc');
+  const btn = document.getElementById('auth-submit');
+  if (!email||!password) { errEl.textContent='Please enter email and password.'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='Please wait...'; errEl.style.display='none'; sucEl.style.display='none';
+  try {
+    const res = await fetch('/api/auth', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:mode,email,password})});
+    const data = await res.json();
+    if (data.error) { errEl.textContent=data.error; errEl.style.display='block'; btn.disabled=false; btn.textContent=mode==='login'?'Log in':'Create account'; return; }
+    if (mode==='signup') { sucEl.textContent=data.message||'Check your email to confirm your account.'; sucEl.style.display='block'; btn.disabled=false; btn.textContent='Create account'; return; }
+    authToken=data.token; localStorage.setItem('tonal_token',authToken);
+    currentUser=data.user; currentTier=data.tier; analysesUsed=data.analyses_this_month;
+    updateNavLoggedIn(); updateLimitBanner(); closeAuthModal();
+  } catch(e) { errEl.textContent='Something went wrong. Try again.'; errEl.style.display='block'; btn.disabled=false; btn.textContent=mode==='login'?'Log in':'Create account'; }
+}
+
+function logout() {
+  authToken=null; currentUser=null; currentTier='free'; analysesUsed=0;
+  localStorage.removeItem('tonal_token');
+  document.getElementById('nav-login-btn').style.display='block';
+  document.getElementById('nav-logout-btn').style.display='none';
+  document.getElementById('nav-history-btn').style.display='none';
+  document.getElementById('nav-user').style.display='none';
+  document.getElementById('limit-banner').classList.remove('show');
+  closeHistory();
+}
+
+// ── History ──
+let historyOpen = false;
+function toggleHistory() { historyOpen ? closeHistory() : openHistory(); }
+async function openHistory() {
+  historyOpen=true; document.getElementById('history-panel').classList.add('open');
+  const listEl = document.getElementById('hp-list');
+  listEl.innerHTML = '<p class="hp-empty">Loading...</p>';
+  try {
+    const res = await fetch('/api/history', {headers:{'Authorization':`Bearer ${authToken}`}});
+    const items = await res.json();
+    if (!items.length) { listEl.innerHTML='<p class="hp-empty">No analyses yet.<br/>Upload your first photo to get started.</p>'; return; }
+    listEl.innerHTML = items.map(item => {
+      const date = new Date(item.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<div class="hp-item"><div class="hp-top"><div><p class="hp-style">${item.style||'Unknown'}</p><p class="hp-label">${item.score_label||''}</p></div><p class="hp-score">${item.score||0}</p></div><div class="hp-bar"><div class="hp-fill" style="width:${item.score||0}%"></div></div><p class="hp-date">${date}</p></div>`;
+    }).join('');
+  } catch(e) { listEl.innerHTML='<p class="hp-empty">Could not load history.</p>'; }
+}
+function closeHistory() { historyOpen=false; document.getElementById('history-panel').classList.remove('open'); }
+
+async function saveAnalysis(result, dataUrl) {
+  if (!authToken||!result) return;
+  const thumb = await new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => { const c=document.createElement('canvas'),s=Math.min(1,120/img.width); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height); resolve(c.toDataURL('image/jpeg',0.6)); };
+    img.src=dataUrl;
+  });
+  try {
+    await fetch('/api/history', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${authToken}`},body:JSON.stringify({style:result.style,score:result.score,score_label:result.score_label,why_it_reads:result.why_it_reads,whats_missing:result.whats_missing,corrections:result.corrections,composition:result.composition,masking:result.masking,image_thumb:thumb})});
+    analysesUsed=(result._analyses_used)||analysesUsed+1;
+    updateLimitBanner();
+  } catch(e){}
+}
+
+// ── Init ──
+initAuth();
+</script>
+</body>
+</html>
